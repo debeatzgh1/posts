@@ -1,3 +1,308 @@
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Debeatzgh AI Blog Hub</title>
+
+<style>
+:root{
+  --bg:#0b1220;
+  --card:#111827;
+  --muted:#9ca3af;
+  --accent:#38bdf8;
+  --radius:16px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  background:var(--bg);
+  color:#fff;
+}
+
+/* Header */
+.header{
+  position:sticky;top:0;z-index:1000;
+  background:#020617;
+  padding:12px;
+}
+.search{
+  width:100%;
+  padding:10px 14px;
+  border-radius:999px;
+  border:none;
+  background:var(--card);
+  color:#fff;
+  font-size:14px;
+}
+
+/* Tabs */
+.tabs{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+  overflow-x:auto;
+}
+.tabs button{
+  background:var(--card);
+  color:#fff;
+  border:0;
+  padding:8px 14px;
+  border-radius:999px;
+  cursor:pointer;
+}
+.tabs button.active{
+  background:var(--accent);
+  color:#000;
+}
+
+/* Sections */
+.section{padding:14px}
+.section h2{
+  font-size:16px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.badge{
+  font-size:11px;
+  background:var(--accent);
+  color:#000;
+  padding:3px 8px;
+  border-radius:999px;
+}
+
+/* Cards */
+.carousel{
+  display:flex;
+  gap:12px;
+  overflow-x:auto;
+}
+.card{
+  min-width:260px;
+  background:var(--card);
+  border-radius:var(--radius);
+  padding:12px;
+  cursor:pointer;
+}
+.card img{
+  width:100%;
+  height:140px;
+  object-fit:cover;
+  border-radius:12px;
+}
+.card h3{font-size:14px}
+.meta{font-size:11px;color:var(--muted)}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{
+  font-size:10px;
+  background:#020617;
+  padding:3px 7px;
+  border-radius:999px;
+  color:var(--muted);
+}
+
+/* Lists */
+.list .item{
+  background:var(--card);
+  padding:12px;
+  border-radius:12px;
+  margin-bottom:10px;
+  cursor:pointer;
+}
+
+/* Viewer */
+#viewer{
+  position:fixed;inset:0;
+  background:#000;
+  display:none;
+  z-index:99999;
+}
+.viewer-bar{
+  position:absolute;
+  top:8px;left:8px;right:8px;
+  display:flex;justify-content:space-between;
+}
+.viewer-bar button{
+  background:#020617;
+  color:#fff;
+  border:0;
+  padding:8px 12px;
+  border-radius:10px;
+}
+#viewer iframe{width:100%;height:100%;border:0}
+
+/* AI Summary */
+#summary{
+  position:absolute;
+  bottom:0;
+  left:0;right:0;
+  background:rgba(2,6,23,.95);
+  padding:14px;
+  font-size:13px;
+  display:none;
+}
+#summary strong{color:var(--accent)}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <input id="search" class="search" placeholder="🔍 Search across all Debeatzgh blogs…">
+  <div class="tabs">
+    <button class="active" onclick="showTab('all')">All Blogs</button>
+    <button onclick="showTab('trending')">🔥 Trending</button>
+    <button onclick="showTab('recent')">🆕 Most Recent</button>
+  </div>
+</div>
+
+<div id="all"></div>
+<div id="trending" style="display:none" class="section list"></div>
+<div id="recent" style="display:none" class="section list"></div>
+
+<!-- Viewer -->
+<div id="viewer">
+  <div class="viewer-bar">
+    <button onclick="toggleFull()">⛶ Full</button>
+    <button onclick="toggleSummary()">🧠 AI Summary</button>
+    <button onclick="closeViewer()">✖ Close</button>
+  </div>
+  <iframe id="frame"></iframe>
+  <div id="summary"></div>
+</div>
+
+<script>
+const blogs=[
+ {name:"Debeatzgh WP",url:"https://debeatzgh.wordpress.com/feed/",badge:"WordPress"},
+ {name:"Debeatzgh Blogspot",url:"https://debeatzgh1.blogspot.com/feeds/posts/default?alt=rss",badge:"Blogspot"},
+ {name:"Beatzde4",url:"https://beatzde4.blogspot.com/feeds/posts/default?alt=rss",badge:"AI Hustle"},
+ {name:"DigiMart GH",url:"https://digimartgh.blogspot.com/feeds/posts/default?alt=rss",badge:"E-Commerce"},
+ {name:"Debeatzgh 2",url:"https://debeatzgh2.blogspot.com/feeds/posts/default?alt=rss",badge:"Updates"},
+ {name:"My Brands Online",url:"https://mybrandsonline.blogspot.com/feeds/posts/default?alt=rss",badge:"Branding"}
+];
+
+const allPosts=[];
+const allContainer=document.getElementById("all");
+const trending=document.getElementById("trending");
+const recent=document.getElementById("recent");
+
+/* Load blogs */
+blogs.forEach(async(b)=>{
+  const sec=document.createElement("div");
+  sec.className="section";
+  sec.innerHTML=`<h2>${b.name}<span class="badge">${b.badge}</span></h2><div class="carousel"></div>`;
+  allContainer.appendChild(sec);
+  const car=sec.querySelector(".carousel");
+
+  const res=await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(b.url)}`);
+  const data=await res.json();
+
+  data.items.slice(0,10).forEach(p=>{
+    const post={...p,source:b.name};
+    allPosts.push(post);
+
+    const c=document.createElement("div");
+    c.className="card";
+    c.innerHTML=`
+      <img src="${p.thumbnail||'https://via.placeholder.com/400x200'}">
+      <h3>${p.title}</h3>
+      <div class="meta">${b.name} · ${p.pubDate.split(" ")[0]}</div>
+      <div class="tags">${(p.categories||[]).slice(0,4).map(t=>`<span class="tag">${t}</span>`).join("")}</div>
+    `;
+    c.onclick=()=>openViewer(p.link,p.description);
+    car.appendChild(c);
+  });
+
+  setInterval(()=>car.scrollBy({left:280,behavior:"smooth"}),5000);
+});
+
+/* Trending & Recent */
+setTimeout(()=>{
+  const sorted=[...allPosts].sort((a,b)=>new Date(b.pubDate)-new Date(a.pubDate));
+  sorted.slice(0,15).forEach(p=>{
+    const el=document.createElement("div");
+    el.className="item";
+    el.innerHTML=`<strong>${p.title}</strong><br><small>${p.source}</small>`;
+    el.onclick=()=>openViewer(p.link,p.description);
+    recent.appendChild(el);
+  });
+  sorted.slice(0,15).sort(()=>Math.random()-0.5).forEach(p=>{
+    const el=document.createElement("div");
+    el.className="item";
+    el.innerHTML=`🔥 <strong>${p.title}</strong><br><small>${p.source}</small>`;
+    el.onclick=()=>openViewer(p.link,p.description);
+    trending.appendChild(el);
+  });
+},3000);
+
+/* Tabs */
+function showTab(id){
+  ["all","trending","recent"].forEach(t=>{
+    document.getElementById(t).style.display=t===id?"block":"none";
+  });
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+  event.target.classList.add("active");
+}
+
+/* Viewer + AI Summary */
+const viewer=document.getElementById("viewer");
+const frame=document.getElementById("frame");
+const summaryBox=document.getElementById("summary");
+let currentDesc="";
+
+function openViewer(url,desc){
+  frame.src=url;
+  currentDesc=desc||"";
+  summaryBox.style.display="none";
+  viewer.style.display="block";
+}
+function closeViewer(){
+  frame.src="";
+  viewer.style.display="none";
+}
+function toggleFull(){
+  !document.fullscreenElement?viewer.requestFullscreen():document.exitFullscreen();
+}
+
+/* Simple AI-style summarizer */
+function summarize(text){
+  const clean=text.replace(/<[^>]+>/g,"");
+  const sentences=clean.split(".").filter(s=>s.length>40);
+  return sentences.slice(0,3).join(". ")+"…";
+}
+function toggleSummary(){
+  if(!summaryBox.style.display || summaryBox.style.display==="none"){
+    summaryBox.innerHTML="<strong>AI Summary:</strong><br>"+summarize(currentDesc);
+    summaryBox.style.display="block";
+  }else summaryBox.style.display="none";
+}
+
+/* Search */
+document.getElementById("search").addEventListener("input",e=>{
+  const q=e.target.value.toLowerCase();
+  recent.innerHTML="";
+  if(!q){return;}
+  showTab("recent");
+  allPosts.filter(p=>p.title.toLowerCase().includes(q))
+    .slice(0,20)
+    .forEach(p=>{
+      const el=document.createElement("div");
+      el.className="item";
+      el.innerHTML=`<strong>${p.title}</strong><br><small>${p.source}</small>`;
+      el.onclick=()=>openViewer(p.link,p.description);
+      recent.appendChild(el);
+    });
+});
+</script>
+
+</body>
+</html>
+
+
+
+
+
 # 📚 **AI DIGITAL LIBRARY — 20 Premium Blog Posts + Tools**
 
 Welcome to your **AI-powered Digital Library**, a clean and interactive GitHub-style UI featuring 20 curated guides, toolkits, and AI content resources.
