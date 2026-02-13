@@ -1,3 +1,7 @@
+<!-- Elfsight Social Feed | Tech tools and ideas for startups  -->
+<script src="https://elfsightcdn.com/platform.js" async></script>
+<div class="elfsight-app-a4b45e92-12e1-42d5-8780-cdadee65af5b" data-elfsight-app-lazy></div>
+
 <html lang="en">
 <head>
 <meta charset="utf-8">
