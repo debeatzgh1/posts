@@ -161,7 +161,7 @@
         const uiIframe = document.getElementById('ui-iframe');
 
         function openUIHub() {
-            uiIframe.src = "https://debeatzgh1.github.io/blog-/";
+            uiIframe.src = "https://debeatzgh1.github.io/blogs/";
             uiOverlay.style.display = 'flex';
             document.body.style.overflow = 'hidden';
         }
