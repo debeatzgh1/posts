@@ -1,3 +1,255 @@
+<!doctype html>
+
+
+    
+    
+    <style>
+        :root {
+            --notify-color: #ff3e3e;
+            --gist-accent: #58a6ff;
+            --glass-bg: rgba(13, 17, 23, 0.98);
+        }
+
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+        /* 1. POSITIONED RIGHT-MIDDLE + HEARTBEAT */
+        #gist-notifier {
+            position: fixed;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: var(--glass-bg);
+            border: 2px solid var(--gist-accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 9999;
+            box-shadow: 0 0 20px rgba(88, 166, 255, 0.4);
+            animation: heartbeat 1.2s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+            0% { transform: translateY(-50%) scale(1); }
+            15% { transform: translateY(-50%) scale(1.15); }
+            30% { transform: translateY(-50%) scale(1); }
+            45% { transform: translateY(-50%) scale(1.15); }
+            100% { transform: translateY(-50%) scale(1); }
+        }
+
+        .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--notify-color);
+            color: white;
+            font-size: 8px;
+            font-weight: 900;
+            padding: 3px 6px;
+            border-radius: 4px;
+        }
+
+        /* 2. OVERLAY & MODAL */
+        #gist-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(15px);
+            display: none;
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-container {
+            width: 100%;
+            max-width: 850px;
+            height: 85vh;
+            background: #0d1117;
+            border-radius: 20px;
+            border: 1px solid var(--gist-accent);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: 0.3s;
+        }
+
+        /* MOBILE FULL SCREEN OVERRIDE */
+        @media (max-width: 768px) {
+            .modal-container {
+                height: 100vh;
+                max-width: 100%;
+                border-radius: 0;
+                border: none;
+            }
+        }
+
+        .modal-header {
+            padding: 12px 20px;
+            background: #161b22;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* 3. TIMER BUTTON */
+        #close-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #8b949e;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: not-allowed;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        #close-btn.ready {
+            background: var(--notify-color);
+            color: white;
+            cursor: pointer;
+        }
+
+        .alert-banner {
+            background: #ffd600;
+            color: #000;
+            text-align: center;
+            padding: 8px;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        #gist-frame { width: 100%; flex-grow: 1; border: none; }
+
+        #confirm-strip {
+            padding: 12px;
+            background: #161b22;
+            text-align: center;
+            display: none;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
+
+
+
+    <div id="gist-notifier" onclick="openGist()">
+        <span class="badge">SIGN IN</span>
+        <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+    </div>
+
+    <div id="gist-overlay">
+        <div class="modal-container">
+            <div id="status-banner" class="alert-banner">⚠️ LOGIN REQUIRED TO DISABLE AUTO-POPUPS</div>
+            <div class="modal-header">
+                <span style="color:white; font-size:11px; font-weight:bold; letter-spacing:1px;">TECHSHOP SECURE PORTAL</span>
+                <button id="close-btn">3</button>
+            </div>
+            
+            <iframe id="gist-frame" src=""></iframe>
+            
+            <div id="confirm-strip">
+                <button onclick="confirmAuth()" style="background:var(--gist-accent); border:none; color:black; padding:10px 25px; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer; width: 100%; max-width: 300px;">I've Logged In - Stop Popups</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const overlay = document.getElementById('gist-overlay');
+        const frame = document.getElementById('gist-frame');
+        const closeBtn = document.getElementById('close-btn');
+        const banner = document.getElementById('status-banner');
+        const confirmStrip = document.getElementById('confirm-strip');
+        
+        let countdown;
+        let autoPopupInterval;
+        let isAuth = localStorage.getItem('techshop_auth_v2') === 'true';
+
+        function openGist() {
+            if (frame.src === "" || frame.src.includes("about:blank")) {
+                frame.src = "https://www.socialcreator.com/techshop/";
+            }
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            // Start the 3-second lock
+            startCloseTimer();
+            
+            // Wait 5 seconds to show the manual "Stop Popups" button
+            setTimeout(() => { confirmStrip.style.display = 'block'; }, 5000);
+        }
+
+        function startCloseTimer() {
+            let seconds = 3;
+            closeBtn.classList.remove('ready');
+            closeBtn.innerText = seconds;
+            closeBtn.onclick = null;
+            
+            clearInterval(countdown);
+            countdown = setInterval(() => {
+                seconds--;
+                if (seconds > 0) {
+                    closeBtn.innerText = seconds;
+                } else {
+                    clearInterval(countdown);
+                    closeBtn.innerText = "✖";
+                    closeBtn.classList.add('ready');
+                    closeBtn.onclick = closeGist;
+                }
+            }, 1000);
+        }
+
+        function closeGist() {
+            overlay.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function confirmAuth() {
+            isAuth = true;
+            localStorage.setItem('techshop_auth_v2', 'true');
+            clearInterval(autoPopupInterval);
+            banner.style.background = "#4caf50";
+            banner.innerText = "✅ AUTHENTICATED. POPUPS REMOVED.";
+            document.getElementById('gist-notifier').style.display = 'none';
+            setTimeout(closeGist, 1000);
+        }
+
+        function initAutoPopup() {
+            if (isAuth) return;
+            autoPopupInterval = setInterval(() => {
+                if (overlay.style.display !== 'flex' && !isAuth) {
+                    openGist();
+                }
+            }, 6000); 
+        }
+
+        window.onload = () => {
+            if (!isAuth) {
+                initAutoPopup();
+            } else {
+                document.getElementById('gist-notifier').style.display = 'none';
+            }
+        };
+
+        // Extra layer: Close on background click only if timer is finished
+        overlay.onclick = (e) => {
+            if (e.target === overlay && closeBtn.classList.contains('ready')) closeGist();
+        };
+    </script>
+
+</!doctype>
+
+
 
 <html lang="en">
 <head>
