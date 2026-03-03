@@ -1,3 +1,200 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glass UI Generator | Pro Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --accent-glow: linear-gradient(135.2deg, #e11d48 1.1%, #3b82f6 98.9%);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: #ffffff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Ambient Glow */
+        .orb {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: var(--accent-glow);
+            filter: blur(100px);
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.4;
+            animation: pulse 8s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); opacity: 0.4; }
+            to { transform: scale(1.2); opacity: 0.6; }
+        }
+
+        /* Main Dashboard Card */
+        .glass-container {
+            width: 90%;
+            max-width: 500px;
+            padding: 40px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .controls { margin-top: 30px; text-align: left; display: grid; gap: 15px; }
+        input[type=range] { width: 100%; cursor: pointer; }
+        
+        #code-output {
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #60a5fa;
+            border: 1px solid #1e293b;
+        }
+
+        /* Full Page Overlay */
+        #url-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 9999;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        #close-btn {
+            position: absolute;
+            top: 20px; right: 20px;
+            z-index: 10000;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 50px;
+            cursor: not-allowed;
+            opacity: 0.5;
+            transition: all 0.3s ease;
+        }
+
+        #close-btn.active {
+            cursor: pointer;
+            opacity: 1;
+            background: #e11d48;
+        }
+    </style>
+</head>
+<body>
+
+<div class="orb"></div>
+
+<div class="glass-container">
+    <h2 style="margin-top:0;">Glass UI Configurator 💎</h2>
+    <div class="controls">
+        <label>Transparency: <span id="op-val">0.1</span></label>
+        <input type="range" id="op-in" min="0" max="1" step="0.01" value="0.1">
+        
+        <label>Blur: <span id="bl-val">15</span>px</label>
+        <input type="range" id="bl-in" min="0" max="40" step="1" value="15">
+    </div>
+    <div id="code-output">Loading config...</div>
+</div>
+
+<div id="url-overlay">
+    <button id="close-btn" onclick="closeOverlay()">Wait (3s)</button>
+    <iframe id="overlay-frame" src="https://debeatzgh1.github.io/firebase-front-end-components/" 
+            style="width:100%; height:100%; border:none;"></iframe>
+</div>
+
+<script>
+    // --- GLASS GENERATOR LOGIC ---
+    const opIn = document.getElementById('op-in');
+    const blIn = document.getElementById('bl-in');
+    const glass = document.querySelector('.glass-container');
+    const code = document.getElementById('code-output');
+
+    function syncUI() {
+        const o = opIn.value; const b = blIn.value;
+        document.getElementById('op-val').innerText = o;
+        document.getElementById('bl-val').innerText = b;
+        
+        glass.style.background = `rgba(255, 255, 255, ${o})`;
+        glass.style.backdropFilter = `blur(${b}px)`;
+        code.innerHTML = `background: rgba(255, 255, 255, ${o});<br>backdrop-filter: blur(${b}px);`;
+    }
+    [opIn, blIn].forEach(i => i.addEventListener('input', syncUI));
+    syncUI();
+
+    // --- OVERLAY LOGIC ---
+    const overlay = document.getElementById('url-overlay');
+    const closeBtn = document.getElementById('close-btn');
+    let countdown;
+
+    function showOverlay() {
+        // Referral check: Don't show if user arrives from the same URL
+        if (document.referrer.includes("debeatzgh1.github.io/firebase-front-end-components")) return;
+
+        overlay.style.display = 'block';
+        startCountdown();
+    }
+
+    function startCountdown() {
+        let timer = 3;
+        closeBtn.classList.remove('active');
+        closeBtn.disabled = true;
+        closeBtn.innerText = `Wait (${timer}s)`;
+
+        clearInterval(countdown);
+        countdown = setInterval(() => {
+            timer--;
+            if (timer > 0) {
+                closeBtn.innerText = `Wait (${timer}s)`;
+            } else {
+                clearInterval(countdown);
+                closeBtn.innerText = "Close [X]";
+                closeBtn.classList.add('active');
+                closeBtn.disabled = false;
+            }
+        }, 1000);
+    }
+
+    function closeOverlay() {
+        overlay.style.display = 'none';
+    }
+
+    // Initial Trigger
+    window.onload = () => setTimeout(showOverlay, 1000);
+
+    // Loop every 6 seconds
+    setInterval(() => {
+        if (overlay.style.display === 'none') showOverlay();
+    }, 6000);
+</script>
+
+</body>
+</html>
+
+
 <!doctype html>
 
 
