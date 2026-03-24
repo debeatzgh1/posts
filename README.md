@@ -227,7 +227,7 @@
             // Trigger WordPress signup after 8 seconds if not authenticated
             if(!localStorage.getItem('techshop_auth_v2')) {
                 setTimeout(() => {
-                    openGlobalOverlay('https://debeatzgh1.github.io/Blogger-sign-up-button-/');
+                    openGlobalOverlay('https://appdategh1.blogspot.com/');
                 }, 8000);
             }
         };
