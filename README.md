@@ -143,7 +143,7 @@
             </div>
         </div>
 
-        <button onclick="openGlobalOverlay('https://debeatzgh1.github.io/Blogger-sign-up-button-/')" 
+        <button onclick="openGlobalOverlay('https://appdategh1.blogspot.com/')" 
             class="bg-cyan-500 text-black text-[10px] font-black px-4 py-2 rounded-lg uppercase hover:bg-white transition">
             Access
         </button>
