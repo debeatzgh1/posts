@@ -1,7 +1,3 @@
-<!-- Elfsight RSS Feed | RSS Feed -->
-<script src="https://elfsightcdn.com/platform.js" async></script>
-<div class="elfsight-app-df567ac9-59ad-42a0-9c79-0173a06788fa" data-elfsight-app-lazy></div>
-
 <!-- Elfsight Announcement Bar | Ads -->
 <script src="https://elfsightcdn.com/platform.js" async></script>
 <div class="elfsight-app-da4c4e26-f1fe-4865-98e5-07ab2384d659" data-elfsight-app-lazy></div>
@@ -113,7 +109,7 @@
     </div>
 
     <script>
-        const homeUrl = "https://form.svhrt.com/60f4a0aeedc1993c8c7b3989";
+        const homeUrl = "https://df567ac959ad42a09c790173a06788fa.elf.site";
         let lastScrollTop = 0;
 
         // --- 1. AUTO-POPUP LOGIC (Every 6s) ---
